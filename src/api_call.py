@@ -26,46 +26,55 @@ def get_total_number(url):
 
 
 def read_csv_file():
+    '''
+        The function takes the file name from the file directory and return datafreame
+        return: df - Dataframe
+    '''
     abs_dir_path = os.path.abspath(os.curdir)
     fpath = os.path.join(abs_dir_path, '/patient_files')
     f_path = f"{abs_dir_path}\patient_files\patients.csv"
     print(f_path)
     df = pd.read_csv(f_path)
     #df1 = df.groupby('patient_id', group_keys=False).apply(lambda x: x.loc[x.ndc_number.idxmax()])
-    # Using list() Function
-    col_list = list(df["ndc_number"])
-   # print(col_list)
     return df
 
 def convert_package_ndc_to_ndc_number(pckg_ndc):
-    ndc_pckg = ""
-
+    '''
+        The function takes the pckg_ndc name from the parsed json file and return ndc_number
+        return: df - Dataframe
+    '''
+    ndc_number = ""
     spilt_val = pckg_ndc.split('-')
 
     if len(spilt_val[0]) < 5:
-        ndc_pckg = f"0{spilt_val[0]}{spilt_val[1]}{spilt_val[2]}"
+        ndc_number = f"0{spilt_val[0]}{spilt_val[1]}{spilt_val[2]}"
     elif len(spilt_val[1]) < 4:
-        ndc_pckg = f"{spilt_val[0]}0{spilt_val[1]}{spilt_val[2]}"
+        ndc_number = f"{spilt_val[0]}0{spilt_val[1]}{spilt_val[2]}"
     elif len(spilt_val[2]) < 2:
-        ndc_pckg = f"{spilt_val[0]}{spilt_val[1]}0{spilt_val[2]}"
+        ndc_number = f"{spilt_val[0]}{spilt_val[1]}0{spilt_val[2]}"
 
-    return ndc_pckg
+    return ndc_number
 
 
-def get_max_patient():
+def get_max_patient_for_ten_active_ingredients(url):
     active_ingredients_dict = dict()
     main_url = "https://api.fda.gov/drug/ndc.json?"
     url = f"{main_url}search=_exists_:active_ingredients.name+AND+_exists_:packaging.package_ndc&limit=1"
     row_number = get_total_number(url)
-    url = f"{main_url}search=_exists_:active_ingredients.name+AND+_exists_:packaging.package_ndc&limit=1000"
+    url = f"{main_url}search=_exists_:active_ingredients.name+AND+_exists_:packaging.package_ndc&limit=10"
     response = requests.get(url)
     #print(response.json())
     resp_dict = response.json()
     res1 = (resp_dict["results"])
-    #df = pd.DataFrame(resp_dict["results"])
-    #print(df)
-    #print(df[['active_ingredients', 'packaging']])
-    #print(type(res1))
+    entries = resp_dict["results"]
+    df = pd.DataFrame(resp_dict["results"])
+    #df = pd.json_normalize(entries)
+    # Using DataFrame.nlargest() function.
+    #df2 = df.nlargest(10, ['active_ingredients'])
+    #print(df2)
+    # print(df)
+    # print(df[['active_ingredients', 'packaging']])
+    # print(type(res1))
     for dict1 in res1:
         val = dict1["active_ingredients"]
         name_val = None
@@ -74,7 +83,7 @@ def get_max_patient():
             name_val = i["name"]
             print(name_val)
             break
-        #print(dict1["active_ingredients"]['name'])
+        # print(dict1["active_ingredients"]['name'])
 
         val2 = dict1["packaging"]
         for y in val2:
@@ -82,7 +91,7 @@ def get_max_patient():
             print((pckg_ndc))
             ndc_number_val = convert_package_ndc_to_ndc_number(pckg_ndc)
 
-            print((ndc_number))
+            print((ndc_number_val))
 
             if name_val in active_ingredients_dict:
                 ndc_number_exist_list = active_ingredients_dict[name_val]
@@ -100,34 +109,19 @@ def get_max_patient():
         output = df['ndc_number'].isin(list2)
         print(output)
 
-def get_missing_drugs():
-    main_url = "https://api.fda.gov/drug/ndc.json?"
-    url = f"{main_url}search=_missing_:active_ingredients.name+AND+_exists_:packaging.package_ndc&limit=1000"
+
+def get_missing_drugs(main_url):
+    url = f"{main_url}search=_missing_:active_ingredients.name+AND+_exists_:packaging.package_ndc&limit=2"
     response = requests.get(url)
     #print(response.json())
     data = response.json()
     entries = data["results"]
-    df = pd.json_normalize(entries)
-    print(df["packaging"].head())
+    df = pd.json_normalize(
+        entries, "packaging"
+    )
+    pd.set_option('display.max_columns', None)
+    print(df)
+    pckg_lst = df['package_ndc'].to_list()
+    print(pckg_lst)
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-    #print(fpath)
-
-#convert_package_ndc_to_ndc_number()
-#read_csv_file()
-#get_max_patient()
-#get_max_patient()
-get_missing_drugs()

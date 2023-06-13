@@ -27,6 +27,13 @@ def get_members():
     row_number = app.get_total_number(url)
     print(f"Total missing ndc packages : {row_number}")
 
+def get_max_patient_for_ten_active_ingredients():
+    output = app.get_max_patient_for_ten_active_ingredients(main_url)
+
+def get_missing_drugs():
+    output = app.get_max_patient_for_ten_active_ingredients(main_url)
+
+
 get_patients_number_for_active_ingredient()
 get_total_row_number()
 get_missing_package_ndc()
