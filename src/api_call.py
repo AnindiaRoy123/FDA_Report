@@ -7,14 +7,14 @@ from requests import RequestException
 
 
 def get_total_number(url):
+    '''
+        The function takes the url and return the total row list number
+        return: df - Dataframe
+    '''
     patient_number = 0
     try:
-        #val = "LEVODOPA"
-
         response = requests.get(url)
-        #print(type(response.json()))
         resp_dict = response.json()
-        #print(response.json())
 
         for key in resp_dict:
             if key == "meta":
@@ -57,71 +57,86 @@ def convert_package_ndc_to_ndc_number(pckg_ndc):
 
 
 def get_max_patient_for_ten_active_ingredients(url):
-    active_ingredients_dict = dict()
-    main_url = "https://api.fda.gov/drug/ndc.json?"
-    url = f"{main_url}search=_exists_:active_ingredients.name+AND+_exists_:packaging.package_ndc&limit=1"
-    row_number = get_total_number(url)
-    url = f"{main_url}search=_exists_:active_ingredients.name+AND+_exists_:packaging.package_ndc&limit=10"
-    response = requests.get(url)
-    #print(response.json())
-    resp_dict = response.json()
-    res1 = (resp_dict["results"])
-    entries = resp_dict["results"]
-    df = pd.DataFrame(resp_dict["results"])
-    #df = pd.json_normalize(entries)
-    # Using DataFrame.nlargest() function.
-    #df2 = df.nlargest(10, ['active_ingredients'])
-    #print(df2)
-    # print(df)
-    # print(df[['active_ingredients', 'packaging']])
-    # print(type(res1))
-    for dict1 in res1:
-        val = dict1["active_ingredients"]
-        name_val = None
-        ndc_number = list()
-        for i in val:
-            name_val = i["name"]
-            print(name_val)
-            break
-        # print(dict1["active_ingredients"]['name'])
+    '''
+        The function takes the main url and return max outcome of the patient for the active active_ingredients
+        It has to first get total row number for pagination and then pass the pagination no
+    '''
+    try:
+        active_ingredients_dict = dict()
+        main_url = "https://api.fda.gov/drug/ndc.json?"
+        url = f"{main_url}search=_exists_:active_ingredients.name+AND+_exists_:packaging.package_ndc&limit=1"
+        row_number = get_total_number(url)
+        url = f"{main_url}search=_exists_:active_ingredients.name+AND+_exists_:packaging.package_ndc&limit=10"
+        response = requests.get(url)
+        #print(response.json())
+        resp_dict = response.json()
+        res1 = (resp_dict["results"])
+        entries = resp_dict["results"]
+        df = pd.DataFrame(resp_dict["results"])
+        #df = pd.json_normalize(entries)
+        # Using DataFrame.nlargest() function.
+        #df2 = df.nlargest(10, ['active_ingredients'])
+        #print(df2)
+        # print(df)
+        # print(df[['active_ingredients', 'packaging']])
+        # print(type(res1))
+        for dict1 in res1:
+            val = dict1["active_ingredients"]
+            name_val = None
+            ndc_number = list()
+            for i in val:
+                name_val = i["name"]
+                print(name_val)
+                break
+            # print(dict1["active_ingredients"]['name'])
 
-        val2 = dict1["packaging"]
-        for y in val2:
-            pckg_ndc = y["package_ndc"]
-            print((pckg_ndc))
-            ndc_number_val = convert_package_ndc_to_ndc_number(pckg_ndc)
+            val2 = dict1["packaging"]
+            for y in val2:
+                pckg_ndc = y["package_ndc"]
+                print((pckg_ndc))
+                ndc_number_val = convert_package_ndc_to_ndc_number(pckg_ndc)
 
-            print((ndc_number_val))
+                print((ndc_number_val))
 
-            if name_val in active_ingredients_dict:
-                ndc_number_exist_list = active_ingredients_dict[name_val]
-                ndc_number_exist_list.append(ndc_number_val)
-            else:
-                ndc_number.append(ndc_number_val)
-                active_ingredients_dict[name_val] = ndc_number
-            break
+                if name_val in active_ingredients_dict:
+                    ndc_number_exist_list = active_ingredients_dict[name_val]
+                    ndc_number_exist_list.append(ndc_number_val)
+                else:
+                    ndc_number.append(ndc_number_val)
+                    active_ingredients_dict[name_val] = ndc_number
+                break
 
-    print(active_ingredients_dict)
-    df = read_csv_file()
-    for key in active_ingredients_dict:
-        list2 = active_ingredients_dict[key]
-        print(list2)
-        output = df['ndc_number'].isin(list2)
-        print(output)
+        print(active_ingredients_dict)
+        df = read_csv_file()
+        for key in active_ingredients_dict:
+            list2 = active_ingredients_dict[key]
+            print(list2)
+            output = df['ndc_number'].isin(list2)
+            print(output)
+    except Exception as err:
+        print(f"Error to get max_patient for ten active ingredients : {err}")
+
+
 
 
 def get_missing_drugs(main_url):
+    '''
+        The function takes the main url and return max patient no for the inactive active_ingredients
+    '''
     url = f"{main_url}search=_missing_:active_ingredients.name+AND+_exists_:packaging.package_ndc&limit=2"
-    response = requests.get(url)
-    #print(response.json())
-    data = response.json()
-    entries = data["results"]
-    df = pd.json_normalize(
-        entries, "packaging"
-    )
-    pd.set_option('display.max_columns', None)
-    print(df)
-    pckg_lst = df['package_ndc'].to_list()
-    print(pckg_lst)
+    try:
+        response = requests.get(url)
+        #print(response.json())
+        data = response.json()
+        entries = data["results"]
+        df = pd.json_normalize(
+            entries, "packaging"
+        )
+        pd.set_option('display.max_columns', None)
+        print(df)
+        pckg_lst = df['package_ndc'].to_list()
+        print(pckg_lst)
+    except Exception as err:
+        print(f"Error to get missing drugs : {err}")
 
 
